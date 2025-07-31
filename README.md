@@ -1,50 +1,92 @@
-# Welcome to your Expo app 👋
+# MiniPay
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A simple React Native mobile banking app built with Expo and Redux.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **User Authentication**: Store and greet users by name using React Redux
+- **Dashboard**: View and swipe through multiple bank accounts
+- **Animated Menu Drawer**: Slide-out menu with smooth animations
+- **Profile Management**: User profile screen with logout functionality
+- **Dark/Light Mode**: Automatic theme switching based on system preferences
+
+## Screens
+
+### Login Screen
+
+- Enter your name to get started
+- Returning users are greeted by name
+- Simple and clean interface
+
+### Dashboard Screen
+
+- Welcome message with user's name
+- Swipeable bank account cards
+- Account balance display
+- Action buttons (non-functional as requested)
+- Animated menu drawer with hamburger menu
+
+### Profile Screen
+
+- User avatar with initials
+- Profile information
+- Menu items for various settings
+- Logout functionality
+
+## Technical Stack
+
+- **React Native** with Expo
+- **Redux Toolkit** for state management
+- **React Navigation** for routing
+- **React Native Gesture Handler** for swipe gestures
+- **React Native Reanimated** for animations
+- **TypeScript** for type safety
+
+## Getting Started
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Start the development server:
 
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+3. Run on your preferred platform:
+   - iOS: `npm run ios`
+   - Android: `npm run android`
+   - Web: `npm run web`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+minipay/
+├── app/                    # App screens and navigation
+│   ├── login.tsx          # Login screen
+│   └── (tabs)/            # Tab navigation
+│       ├── index.tsx      # Dashboard screen
+│       └── explore.tsx    # Profile screen
+├── store/                  # Redux store
+│   ├── index.ts           # Store configuration
+│   ├── userSlice.ts       # User state management
+│   └── hooks.ts           # Typed Redux hooks
+└── components/            # Reusable components
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## State Management
 
-## Learn more
+The app uses Redux Toolkit to manage user state:
 
-To learn more about developing your project with Expo, look at the following resources:
+- User name storage
+- Login/logout functionality
+- Persistent user session
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Animations
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Smooth menu drawer animations using React Native Reanimated
+- Swipe gestures for bank account navigation
+- Haptic feedback on tab interactions

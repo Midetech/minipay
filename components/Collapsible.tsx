@@ -1,45 +1,59 @@
-import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from "@/constants/Colors";
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
+type Props = {
+  title: string;
+  children: React.ReactNode;
+};
+
+export function Collapsible({ title, children }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  const theme = useColorScheme() ?? 'light';
 
   return (
-    <ThemedView>
+    <View style={styles.container}>
       <TouchableOpacity
-        style={styles.heading}
-        onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}>
-        <IconSymbol
-          name="chevron.right"
-          size={18}
-          weight="medium"
-          color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
-          style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
-        />
-
-        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+        style={styles.header}
+        onPress={() => setIsOpen(!isOpen)}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.title, { color: Colors.light.text }]}>
+          {title}
+        </Text>
+        <Text style={[styles.chevron, { color: Colors.light.text }]}>
+          {isOpen ? "▼" : "▶"}
+        </Text>
       </TouchableOpacity>
-      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
-    </ThemedView>
+      {isOpen && <View style={styles.content}>{children}</View>}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  container: {
+    marginVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    overflow: "hidden",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: Colors.light.background,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  chevron: {
+    fontSize: 12,
   },
   content: {
-    marginTop: 6,
-    marginLeft: 24,
+    padding: 16,
+    backgroundColor: Colors.light.background,
   },
 });
