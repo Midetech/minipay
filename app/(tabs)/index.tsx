@@ -1,8 +1,10 @@
 import { Card } from "@/components/Card";
+import { getAccount } from "@/store/accountThunks";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   StyleSheet,
@@ -15,47 +17,15 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors } from "../../constants/Colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { logout } from "../../store/userSlice";
-
-// Mock bank accounts data
-const bankAccounts = [
-  {
-    id: "1",
-    name: "Chase Bank",
-    accountNumber: "****1234",
-    balance: 2547.89,
-    type: "Checking",
-  },
-  {
-    id: "2",
-    name: "Wells Fargo",
-    accountNumber: "****5678",
-    balance: 18923.45,
-    type: "Savings",
-  },
-  {
-    id: "3",
-    name: "Bank of America",
-    accountNumber: "****9012",
-    balance: 5432.1,
-    type: "Checking",
-  },
-];
 
 export default function DashboardScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.user);
+  const { user, isFetchingAccounts } = useAppSelector((state) => state.user);
   const translateX = useRef(new Animated.Value(-250)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const { width: screenWidth } = useWindowDimensions();
   const flatListRef = useRef<FlatList>(null);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    router.replace("/login");
-  };
 
   const toggleMenu = () => {
     const toValue = isMenuOpen ? -250 : 0;
@@ -78,24 +48,26 @@ export default function DashboardScreen() {
   };
 
   const closeMenu = () => {
-    console.log("closeMenu called, isMenuOpen:", isMenuOpen);
-    if (isMenuOpen) {
-      Animated.parallel([
-        Animated.timing(translateX, {
-          toValue: -250,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: -250,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      setIsMenuOpen(false);
-    }
+    setIsMenuOpen(false);
   };
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(getAccount(user.id));
+    }
+  }, [user?.id, dispatch]);
+
+  if (!user) {
+    return null; // Auto-logout hook will handle redirect
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -119,7 +91,7 @@ export default function DashboardScreen() {
 
         {/* Overlay Background */}
         {isMenuOpen && (
-          <TouchableWithoutFeedback onPress={toggleMenu}>
+          <TouchableWithoutFeedback onPress={closeMenu}>
             <Animated.View
               style={[
                 styles.overlay,
@@ -132,62 +104,63 @@ export default function DashboardScreen() {
         )}
 
         {/* Menu Drawer */}
-        {isMenuOpen && (
-          <Animated.View
-            style={[
-              styles.menuDrawer,
-              {
-                backgroundColor: Colors.light.background,
-                transform: [{ translateX }],
-              },
-            ]}
-          >
-            <View style={styles.menuContent}>
-              <View style={styles.menuHeader}>
-                <Text style={[styles.menuTitle, { color: Colors.light.text }]}>
-                  Menu
-                </Text>
-                <TouchableOpacity
-                  onPress={toggleMenu}
-                  style={styles.closeButton}
-                >
-                  <Text
-                    style={[styles.closeIcon, { color: Colors.light.text }]}
-                  >
-                    ✕
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text
-                  style={[styles.menuItemText, { color: Colors.light.text }]}
-                >
-                  Profile
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
-                <Text
-                  style={[styles.menuItemText, { color: Colors.light.text }]}
-                >
-                  Settings
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
-                <Text
-                  style={[styles.menuItemText, { color: Colors.light.text }]}
-                >
-                  Help
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                <Text style={[styles.menuItemText, { color: "#ff4444" }]}>
-                  Logout
+        <Animated.View
+          style={[
+            styles.menuDrawer,
+            {
+              backgroundColor: Colors.light.background,
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+          <View style={styles.menuContent}>
+            <View style={styles.menuHeader}>
+              <Text style={[styles.menuTitle, { color: Colors.light.text }]}>
+                Menu
+              </Text>
+              <TouchableOpacity onPress={closeMenu} style={styles.closeButton}>
+                <Text style={[styles.closeIcon, { color: Colors.light.text }]}>
+                  ✕
                 </Text>
               </TouchableOpacity>
             </View>
-          </Animated.View>
-        )}
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                router.push("/profile");
+                closeMenu();
+              }}
+            >
+              <Text style={[styles.menuItemText, { color: Colors.light.text }]}>
+                Profile
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                router.push("/explore");
+                closeMenu();
+              }}
+            >
+              <Text style={[styles.menuItemText, { color: Colors.light.text }]}>
+                Settings
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                router.push("/explore");
+                closeMenu();
+              }}
+            >
+              <Text style={[styles.menuItemText, { color: Colors.light.text }]}>
+                Help
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
         {/* Main Content */}
         <View style={styles.content}>
           <Text style={[styles.welcomeText, { color: Colors.light.text }]}>
@@ -195,62 +168,78 @@ export default function DashboardScreen() {
           </Text>
 
           {/* Bank Account Card */}
-          <View style={styles.cardContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={bankAccounts}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <Card currentAccount={item} />}
-              pagingEnabled
-              snapToInterval={screenWidth - 40}
-              snapToAlignment="center"
-              decelerationRate="fast"
-              // contentContainerStyle={{ paddingHorizontal: 20 }}
-              onMomentumScrollEnd={(event) => {
-                const index = Math.round(
-                  event.nativeEvent.contentOffset.x / (screenWidth - 40)
-                );
-                setCurrentIndex(index);
-              }}
-              getItemLayout={(data, index) => ({
-                length: screenWidth - 40,
-                offset: (screenWidth - 40) * index,
-                index,
-              })}
-            />
-
-            <View style={styles.indicators}>
-              {bankAccounts.map((_, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    setCurrentIndex(index);
-                    // Scroll to the specific card
-                    flatListRef.current?.scrollToIndex({
-                      index,
-                      animated: true,
-                    });
-                  }}
-                  style={[
-                    styles.indicator,
-                    {
-                      backgroundColor:
-                        index === currentIndex
-                          ? Colors.light.tint
-                          : Colors.light.tabIconDefault,
-                    },
-                  ]}
-                />
-              ))}
+          {isFetchingAccounts ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.light.tint} />
+              <Text style={styles.loadingText}>Loading accounts...</Text>
             </View>
+          ) : user.bankAccounts.length > 0 ? (
+            <View style={styles.cardContainer}>
+              <FlatList
+                ref={flatListRef}
+                data={user.bankAccounts}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <Card currentAccount={item} />}
+                pagingEnabled
+                snapToInterval={screenWidth - 40}
+                snapToAlignment="center"
+                decelerationRate="fast"
+                onMomentumScrollEnd={(event) => {
+                  const index = Math.round(
+                    event.nativeEvent.contentOffset.x / (screenWidth - 40)
+                  );
+                  setCurrentIndex(index);
+                }}
+                getItemLayout={(data, index) => ({
+                  length: screenWidth - 40,
+                  offset: (screenWidth - 40) * index,
+                  index,
+                })}
+              />
 
-            {/* Swipe Instructions */}
-            <Text style={[styles.swipeText, { color: Colors.light.text }]}>
-              Swipe left/right to view different accounts
-            </Text>
-          </View>
+              <View style={styles.indicators}>
+                {user.bankAccounts.map((_, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      setCurrentIndex(index);
+                      flatListRef.current?.scrollToIndex({
+                        index,
+                        animated: true,
+                      });
+                    }}
+                    style={[
+                      styles.indicator,
+                      {
+                        backgroundColor:
+                          index === currentIndex
+                            ? Colors.light.tint
+                            : Colors.light.tabIconDefault,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text
+                style={[styles.emptyStateTitle, { color: Colors.light.text }]}
+              >
+                No Bank Accounts
+              </Text>
+              <Text
+                style={[
+                  styles.emptyStateSubtitle,
+                  { color: Colors.light.tabIconDefault },
+                ]}
+              >
+                Add your bank accounts to get started
+              </Text>
+            </View>
+          )}
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
@@ -387,7 +376,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 30,
   },
-
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    marginBottom: 30,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    textAlign: "center",
+  },
   indicators: {
     flexDirection: "row",
     marginTop: 20,
@@ -416,5 +419,20 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+    marginTop: 50,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.light.text,
   },
 });

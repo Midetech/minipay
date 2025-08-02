@@ -1,7 +1,9 @@
+import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -12,21 +14,132 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../constants/Colors";
-import { useAppDispatch } from "../store/hooks";
-import { setUserName } from "../store/userSlice";
+import { storageService } from "../services/api";
+import {
+  biometricLogin,
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "../store/authThunks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { clearError } from "../store/userSlice";
 
 export default function LoginScreen() {
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const dispatch = useAppDispatch();
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [returningUser, setReturningUser] = useState<{
+    username: string;
+  } | null>(null);
 
-  const handleLogin = () => {
-    if (username.trim() && password.trim()) {
-      dispatch(setUserName(username));
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isLoggedIn, user } = useAppSelector(
+    (state) => state.user
+  );
+
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      setIsBiometricSupported(hasHardware && isEnrolled);
+    };
+
+    const checkReturningUser = async () => {
+      try {
+        const savedUserData = await storageService.getUserData();
+        if (savedUserData && savedUserData.name) {
+          setReturningUser({ username: savedUserData.name });
+          setUsername(savedUserData.username);
+        }
+      } catch (error) {
+        console.error("Error checking returning user:", error);
+      }
+    };
+
+    checkBiometricSupport();
+    checkReturningUser();
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && user) {
       router.replace("/(tabs)");
-    } else {
-      Alert.alert("Error", "Please enter both username and password");
     }
+  }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Error", error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleLogin = async () => {
+    if (!username.trim() || !password.trim()) {
+      Alert.alert("Error", "Please enter both username and password");
+      return;
+    }
+
+    try {
+      await dispatch(
+        loginUser({ username: username.trim(), password })
+      ).unwrap();
+
+      // Clear returning user state when logging in with new credentials
+      setReturningUser(null);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "Invalid username or password");
+      dispatch(logoutUser());
+      // Error is handled by the useEffect above
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!name.trim() || !username.trim() || !password.trim()) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      await dispatch(
+        registerUser({
+          name: name.trim(),
+          username: username.trim(),
+          password,
+        })
+      ).unwrap();
+
+      // Clear returning user state when registering
+      setReturningUser(null);
+    } catch (error) {
+      // Error is handled by the useEffect above
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      await dispatch(biometricLogin()).unwrap();
+
+      // Clear returning user state when logging in with biometric
+      setReturningUser(null);
+    } catch (error) {
+      // Error is handled by the useEffect above
+    }
+  };
+
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    // Clear form when switching modes
+    setName("");
+    setUsername("");
+    setPassword("");
   };
 
   return (
@@ -38,10 +151,38 @@ export default function LoginScreen() {
 
       <View style={styles.content}>
         <Text style={[styles.title, { color: Colors.light.text }]}>
-          Welcome to MiniPay
+          {returningUser
+            ? `Welcome back, ${returningUser.username}!`
+            : isRegisterMode
+            ? "Create Account"
+            : "Welcome to MiniPay"}
         </Text>
 
+        {returningUser && !isRegisterMode && (
+          <Text style={[styles.greeting, { color: Colors.light.text }]}>
+            We&apos;re glad to see you again
+          </Text>
+        )}
+
         <View style={styles.form}>
+          {isRegisterMode && (
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: Colors.light.text,
+                  borderColor: Colors.light.tabIconDefault,
+                },
+              ]}
+              placeholder="Full Name"
+              placeholderTextColor={Colors.light.text}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!isLoading}
+            />
+          )}
+
           <TextInput
             style={[
               styles.input,
@@ -55,8 +196,8 @@ export default function LoginScreen() {
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            editable={!isLoading}
           />
-
           <TextInput
             style={[
               styles.input,
@@ -70,26 +211,62 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            editable={!isLoading}
           />
-
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: Colors.light.tint }]}
-            onPress={handleLogin}
+            style={[
+              styles.loginButton,
+              {
+                backgroundColor: isLoading
+                  ? Colors.light.tabIconDefault
+                  : Colors.light.tint,
+                opacity: isLoading ? 0.7 : 1,
+              },
+            ]}
+            onPress={isRegisterMode ? handleRegister : handleLogin}
+            disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>Login</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.loginButtonText}>
+                {isRegisterMode ? "Create Account" : "Login"}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: Colors.light.text }]}>
-            Don&apos;t have an account?{" "}
+        {!isRegisterMode && isBiometricSupported && (
+          <>
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                {
+                  backgroundColor: isLoading
+                    ? Colors.light.tabIconDefault
+                    : Colors.light.tint,
+                  opacity: isLoading ? 0.7 : 1,
+                },
+              ]}
+              onPress={handleBiometricLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.loginButtonText}>Login with Biometric</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <TouchableOpacity
+          style={styles.switchModeButton}
+          onPress={toggleMode}
+          disabled={isLoading}
+        >
+          <Text style={[styles.switchModeText, { color: Colors.light.tint }]}>
+            {isRegisterMode
+              ? "Already have an account? Login"
+              : "Don't have an account? Create one"}
           </Text>
-          <TouchableOpacity>
-            <Text style={[styles.linkText, { color: Colors.light.tint }]}>
-              Sign up
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -105,10 +282,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 40,
+  },
+  greeting: {
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 20,
   },
   form: {
     gap: 20,
@@ -133,16 +315,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+
+  switchModeButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+  },
+  switchModeText: {
+    fontSize: 16,
+    textAlign: "center",
+    textDecorationLine: "underline",
+  },
   footer: {
-    flexDirection: "row",
-    justifyContent: "center",
     marginTop: 40,
   },
   footerText: {
-    fontSize: 16,
-  },
-  linkText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
   },
 });

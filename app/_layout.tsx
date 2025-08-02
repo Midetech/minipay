@@ -1,29 +1,47 @@
+import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { checkSavedSession } from "@/store/authThunks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { Provider } from "react-redux";
 
 import { store } from "@/store";
 
-export default function RootLayout() {
-  // const dispatch = useAppDispatch();
+function RootLayoutNav() {
+  const dispatch = useAppDispatch();
+  const { isLoggedIn, isBiometricEnabled } = useAppSelector(
+    (state) => state.user
+  );
 
-  // useEffect(() => {
-  //   // Check if user is already logged in
-  //   const checkUser = async () => {
-  //     // For demo purposes, we'll set a default user
-  //     dispatch(setUserName("John Doe"));
-  //   };
+  console.log("isBiometricEnabled", isBiometricEnabled);
 
-  //   checkUser();
-  // }, [dispatch]);
+  // Auto-logout hook to handle user not found scenarios
+  useAutoLogout();
+
+  useEffect(() => {
+    // Check for saved user session on app launch
+    dispatch(checkSavedSession());
+  }, [dispatch]);
 
   return (
-    <Provider store={store}>
+    <>
       <StatusBar style="dark" />
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
+        {!isLoggedIn ? (
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+        ) : (
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        )}
       </Stack>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <RootLayoutNav />
     </Provider>
   );
 }

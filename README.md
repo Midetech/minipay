@@ -1,92 +1,173 @@
-# MiniPay
+# MiniPay - Mobile Payment App
 
-A simple React Native mobile banking app built with Expo and Redux.
+A React Native mobile payment application with biometric authentication and bank account management.
 
 ## Features
 
-- **User Authentication**: Store and greet users by name using React Redux
-- **Dashboard**: View and swipe through multiple bank accounts
-- **Animated Menu Drawer**: Slide-out menu with smooth animations
-- **Profile Management**: User profile screen with logout functionality
-- **Dark/Light Mode**: Automatic theme switching based on system preferences
+### 🔐 Authentication
 
-## Screens
+- **Username/Password Login**: Secure authentication with mocked backend
+- **Biometric Authentication**: Fingerprint and facial recognition support
+- **Session Persistence**: Automatic login with saved credentials
+- **Logout Functionality**: Secure logout with data clearing
 
-### Login Screen
+### 🏦 Bank Account Management
 
-- Enter your name to get started
-- Returning users are greeted by name
-- Simple and clean interface
+- **Multiple Bank Accounts**: Support for checking, savings, and credit accounts
+- **Account Display**: Beautiful card-based UI for account information
+- **Balance Tracking**: Real-time balance display with currency formatting
+- **Account Types**: Visual distinction between different account types
 
-### Dashboard Screen
+### 🎨 User Interface
 
-- Welcome message with user's name
-- Swipeable bank account cards
-- Account balance display
-- Action buttons (non-functional as requested)
-- Animated menu drawer with hamburger menu
+- **Modern Design**: Clean, intuitive interface with smooth animations
+- **Tab Navigation**: Easy navigation between Home, Accounts, Explore, and Profile
+- **Responsive Layout**: Optimized for different screen sizes
+- **Loading States**: Proper loading indicators and error handling
 
-### Profile Screen
+## Technical Implementation
 
-- User avatar with initials
-- Profile information
-- Menu items for various settings
-- Logout functionality
+### Backend Integration
 
-## Technical Stack
+- **Mocked REST API**: Simulated backend using in-memory data store
+- **API Service Layer**: Centralized API communication with error handling
+- **Data Persistence**: Local storage for user sessions and preferences
 
-- **React Native** with Expo
-- **Redux Toolkit** for state management
-- **React Navigation** for routing
-- **React Native Gesture Handler** for swipe gestures
-- **React Native Reanimated** for animations
-- **TypeScript** for type safety
+### State Management
+
+- **Redux Toolkit**: Centralized state management with async thunks
+- **User Authentication**: Complete auth flow with biometric support
+- **Bank Account Data**: Real-time account information management
+
+### Biometric Authentication
+
+- **Expo Local Authentication**: Native biometric authentication
+- **Hardware Detection**: Automatic detection of biometric capabilities
+- **Fallback Support**: Graceful fallback to passcode when needed
+
+## Demo Credentials
+
+Use these credentials to test the application:
+
+- **Username**: `john_doe` or `jane_smith`
+- **Password**: `password123`
 
 ## Getting Started
 
-1. Install dependencies:
+### Prerequisites
 
-   ```bash
-   npm install
-   ```
+- Node.js (v16 or higher)
+- Expo CLI
+- iOS Simulator or Android Emulator
 
-2. Start the development server:
+### Installation
 
-   ```bash
-   npm start
-   ```
+1. Clone the repository:
 
-3. Run on your preferred platform:
-   - iOS: `npm run ios`
-   - Android: `npm run android`
-   - Web: `npm run web`
+```bash
+git clone <repository-url>
+cd minipay
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Start the development server:
+
+```bash
+npm start
+```
+
+4. Run on your preferred platform:
+
+```bash
+# iOS
+npm run ios
+
+# Android
+npm run android
+
+# Web
+npm run web
+```
 
 ## Project Structure
 
 ```
 minipay/
-├── app/                    # App screens and navigation
-│   ├── login.tsx          # Login screen
-│   └── (tabs)/            # Tab navigation
-│       ├── index.tsx      # Dashboard screen
-│       └── explore.tsx    # Profile screen
-├── store/                  # Redux store
-│   ├── index.ts           # Store configuration
-│   ├── userSlice.ts       # User state management
-│   └── hooks.ts           # Typed Redux hooks
-└── components/            # Reusable components
+├── app/                    # Expo Router screens
+│   ├── (tabs)/           # Tab navigation screens
+│   ├── login.tsx         # Authentication screen
+│   └── _layout.tsx       # Root layout
+├── components/            # Reusable UI components
+├── constants/            # App constants and colors
+├── services/             # API and storage services
+├── store/               # Redux store and slices
+└── hooks/               # Custom React hooks
 ```
 
-## State Management
+## Key Components
 
-The app uses Redux Toolkit to manage user state:
+### Authentication Flow
 
-- User name storage
-- Login/logout functionality
-- Persistent user session
+1. **Login Screen**: Username/password or biometric login
+2. **Session Check**: Automatic session restoration on app launch
+3. **Biometric Setup**: Enable biometric authentication after login
+4. **Logout**: Secure logout with data clearing
 
-## Animations
+### Bank Account Features
 
-- Smooth menu drawer animations using React Native Reanimated
-- Swipe gestures for bank account navigation
-- Haptic feedback on tab interactions
+- **Account Display**: Card-based UI showing account details
+- **Balance Formatting**: Proper currency formatting
+- **Account Types**: Visual distinction for different account types
+- **Empty States**: Helpful messages when no accounts exist
+
+## API Endpoints (Mocked)
+
+- `POST /login` - User authentication
+- `GET /user/:id` - Get user information
+- `GET /user/:id/accounts` - Get user's bank accounts
+- `POST /user/:id/accounts` - Add new bank account
+- `PUT /user/:id/accounts/:accountId` - Update bank account
+- `DELETE /user/:id/accounts/:accountId` - Delete bank account
+
+## Technologies Used
+
+- **React Native**: Mobile app framework
+- **Expo**: Development platform and tools
+- **Redux Toolkit**: State management
+- **Expo Local Authentication**: Biometric authentication
+- **AsyncStorage**: Local data persistence
+- **TypeScript**: Type safety and better development experience
+
+## Security Features
+
+- **Biometric Authentication**: Secure device-based authentication
+- **Session Management**: Proper session handling and cleanup
+- **Data Encryption**: Local storage encryption (handled by AsyncStorage)
+- **Error Handling**: Comprehensive error handling and user feedback
+
+## Future Enhancements
+
+- [ ] Real backend integration
+- [ ] Push notifications
+- [ ] Transaction history
+- [ ] Money transfer functionality
+- [ ] QR code payments
+- [ ] Multi-currency support
+- [ ] Advanced security features
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
