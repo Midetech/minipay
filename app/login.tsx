@@ -31,20 +31,7 @@ export default function LoginScreen() {
   } | null>(null);
 
   const dispatch = useAppDispatch();
-  const { isLoading, error, isLoggedIn, user } = useAppSelector(
-    (state) => state.user
-  );
-
-  // Debug logging for login state changes
-  useEffect(() => {
-    console.log("Login screen - state changed:", {
-      isLoggedIn,
-      user: user?.username,
-      error,
-      isBiometricSupported,
-      biometricEnabled,
-    });
-  }, [isLoggedIn, user, error, isBiometricSupported, biometricEnabled]);
+  const { isLoading, isLoggedIn } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     const checkBiometricSupport = async () => {
@@ -89,7 +76,6 @@ export default function LoginScreen() {
     }
 
     try {
-      console.log("Attempting login...");
       await dispatch(
         loginUser({ username: username.trim(), password })
       ).unwrap();
@@ -98,11 +84,9 @@ export default function LoginScreen() {
       setReturningUser(null);
 
       if (isBiometricSupported && !biometricEnabled) {
-        console.log("Showing biometric setup modal");
         setShowBiometricModal(true);
       }
     } catch (error) {
-      console.log("Login error:", error);
       Alert.alert("Error", "Invalid username or password");
     }
   };
@@ -135,21 +119,16 @@ export default function LoginScreen() {
         setShowBiometricModal(true);
       }
     } catch (error) {
-      console.log(error);
       Alert.alert("Error", "Registration failed. Please try again.");
     }
   };
 
   const handleBiometricLogin = async () => {
     try {
-      console.log("Attempting biometric login...");
       await dispatch(biometricLogin()).unwrap();
-      console.log("Biometric login successful");
-
       // Clear returning user state when logging in with biometric
       setReturningUser(null);
     } catch (error) {
-      console.log("Biometric login error:", error);
       Alert.alert(
         "Error",
         "Biometric authentication failed. Please try again."

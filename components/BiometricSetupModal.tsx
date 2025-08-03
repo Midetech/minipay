@@ -30,20 +30,13 @@ export default function BiometricSetupModal({
   const dispatch = useAppDispatch();
 
   const handleEnableBiometric = async () => {
-    console.log("BiometricSetupModal: handleEnableBiometric called");
     setIsLoading(true);
     try {
       let passwordToUse = password;
 
-      console.log("BiometricSetupModal: password provided:", !!passwordToUse);
-
       // If no password provided, try to get it from storage
       if (!passwordToUse) {
         const savedPassword = await storageService.getPassword();
-        console.log(
-          "BiometricSetupModal: saved password found:",
-          !!savedPassword
-        );
         if (!savedPassword) {
           Alert.alert(
             "Error",
@@ -55,9 +48,7 @@ export default function BiometricSetupModal({
         passwordToUse = savedPassword;
       }
 
-      console.log("BiometricSetupModal: attempting to enable biometric");
       const result = await dispatch(enableBiometric(passwordToUse)).unwrap();
-      console.log("BiometricSetupModal: enableBiometric result:", result);
 
       if (result) {
         Alert.alert(
@@ -67,9 +58,6 @@ export default function BiometricSetupModal({
             {
               text: "OK",
               onPress: () => {
-                console.log(
-                  "BiometricSetupModal: biometric enabled successfully"
-                );
                 onSuccess?.();
                 onClose();
               },
@@ -78,7 +66,6 @@ export default function BiometricSetupModal({
         );
       }
     } catch (error) {
-      console.log("BiometricSetupModal: error enabling biometric:", error);
       Alert.alert("Error", "Failed to enable biometric authentication");
     } finally {
       setIsLoading(false);

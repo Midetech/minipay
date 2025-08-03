@@ -31,8 +31,6 @@ function RootLayoutNav() {
     }
   }, [isLoggedIn, isInitialized, router]);
 
-  console.log("isLoggedIn", isLoggedIn, user);
-
   // Show loading state while initializing
   if (!isInitialized) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />;
