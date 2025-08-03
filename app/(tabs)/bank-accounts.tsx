@@ -1,5 +1,4 @@
 import { addAccount, getAccount } from "@/store/accountThunks";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,7 +21,7 @@ export default function BankAccountsScreen() {
     (state) => state.user
   );
   const dispatch = useAppDispatch();
-  const router = useRouter();
+
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Fetch bank accounts when component mounts

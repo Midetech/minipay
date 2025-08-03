@@ -1,10 +1,12 @@
+import AddBankAccountModal from "@/components/AddBankAccountModal";
 import { Card } from "@/components/Card";
-import { getAccount } from "@/store/accountThunks";
+import { addAccount, getAccount } from "@/store/accountThunks";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   StyleSheet,
@@ -19,9 +21,12 @@ import { Colors } from "../../constants/Colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 
 export default function DashboardScreen() {
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isFetchingAccounts } = useAppSelector((state) => state.user);
+  const { user, isFetchingAccounts, isAddingAccount } = useAppSelector(
+    (state) => state.user
+  );
   const translateX = useRef(new Animated.Value(-250)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const { width: screenWidth } = useWindowDimensions();
@@ -68,6 +73,23 @@ export default function DashboardScreen() {
   if (!user) {
     return null; // Auto-logout hook will handle redirect
   }
+
+  const handleAddAccount = async (accountData: Omit<BankAccount, "id">) => {
+    if (!user?.id) {
+      // This should not happen since we show UserNotFoundError when no user
+      return;
+    }
+
+    try {
+      await dispatch(
+        addAccount({ userId: user.id, account: accountData })
+      ).unwrap();
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error("Error adding bank account:", error);
+      Alert.alert("Error", "Failed to add bank account. Please try again.");
+    }
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -238,6 +260,13 @@ export default function DashboardScreen() {
               >
                 Add your bank accounts to get started
               </Text>
+
+              <TouchableOpacity
+                style={styles.addAccountButton}
+                onPress={() => setIsModalVisible(true)}
+              >
+                <Text style={styles.addAccountButtonText}>Add Account</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -274,6 +303,15 @@ export default function DashboardScreen() {
           )}
         </View>
       </View>
+
+      <AddBankAccountModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        onAddAccount={handleAddAccount}
+        isLoading={isAddingAccount}
+        userId={user.id}
+        resetForm={() => {}}
+      />
     </GestureHandlerRootView>
   );
 }
@@ -436,5 +474,16 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: Colors.light.text,
+  },
+  addAccountButton: {
+    backgroundColor: Colors.light.tint,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  addAccountButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
