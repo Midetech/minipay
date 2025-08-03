@@ -193,7 +193,8 @@ export const apiService = new ApiService();
 export const STORAGE_KEYS = {
     USER_DATA: 'user_data',
     BIOMETRIC_ENABLED: 'biometric_enabled',
-    LAST_LOGIN: 'last_login'
+    LAST_LOGIN: 'last_login',
+    PASSWORD: 'password'
 };
 
 // Local storage utilities
@@ -221,7 +222,8 @@ export const storageService = {
             await AsyncStorage.multiRemove([
                 STORAGE_KEYS.USER_DATA,
                 STORAGE_KEYS.BIOMETRIC_ENABLED,
-                STORAGE_KEYS.LAST_LOGIN
+                STORAGE_KEYS.LAST_LOGIN,
+                STORAGE_KEYS.PASSWORD
             ]);
         } catch (error) {
             console.error('Error clearing user data:', error);
@@ -236,6 +238,13 @@ export const storageService = {
         }
     },
 
+    async savePassword(password: string): Promise<void> {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.PASSWORD, password);
+        } catch (error) {
+            console.error('Error saving password:', error);
+        }
+    },
     async getBiometricEnabled(): Promise<boolean> {
         try {
             const data = await AsyncStorage.getItem(STORAGE_KEYS.BIOMETRIC_ENABLED);
@@ -261,6 +270,24 @@ export const storageService = {
         } catch (error) {
             console.error('Error getting last login:', error);
             return null;
+        }
+    },
+
+    async getPassword(): Promise<string | null> {
+        try {
+            const data = await AsyncStorage.getItem(STORAGE_KEYS.PASSWORD);
+            return data || null;
+        } catch (error) {
+            console.error('Error getting password:', error);
+            return null;
+        }
+    },
+
+    async clearPassword(): Promise<void> {
+        try {
+            await AsyncStorage.removeItem(STORAGE_KEYS.PASSWORD);
+        } catch (error) {
+            console.error('Error clearing password:', error);
         }
     }
 }; 

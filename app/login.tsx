@@ -1,5 +1,4 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
@@ -13,16 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import BiometricSetupModal from "../components/BiometricSetupModal";
 import { Colors } from "../constants/Colors";
 import { storageService } from "../services/api";
-import {
-  biometricLogin,
-  loginUser,
-  logoutUser,
-  registerUser,
-} from "../store/authThunks";
+import { biometricLogin, loginUser, registerUser } from "../store/authThunks";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { clearError } from "../store/userSlice";
 
 export default function LoginScreen() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -30,6 +24,8 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
   const [returningUser, setReturningUser] = useState<{
     username: string;
   } | null>(null);
@@ -38,6 +34,17 @@ export default function LoginScreen() {
   const { isLoading, error, isLoggedIn, user } = useAppSelector(
     (state) => state.user
   );
+
+  // Debug logging for login state changes
+  useEffect(() => {
+    console.log("Login screen - state changed:", {
+      isLoggedIn,
+      user: user?.username,
+      error,
+      isBiometricSupported,
+      biometricEnabled,
+    });
+  }, [isLoggedIn, user, error, isBiometricSupported, biometricEnabled]);
 
   useEffect(() => {
     const checkBiometricSupport = async () => {
@@ -49,9 +56,12 @@ export default function LoginScreen() {
     const checkReturningUser = async () => {
       try {
         const savedUserData = await storageService.getUserData();
+        const biometricEnabled = await storageService.getBiometricEnabled();
+
         if (savedUserData && savedUserData.name) {
           setReturningUser({ username: savedUserData.name });
           setUsername(savedUserData.username);
+          setBiometricEnabled(biometricEnabled);
         }
       } catch (error) {
         console.error("Error checking returning user:", error);
@@ -62,18 +72,15 @@ export default function LoginScreen() {
     checkReturningUser();
   }, []);
 
+  // Update biometric enabled state when it changes in Redux store
   useEffect(() => {
-    if (isLoggedIn && user) {
-      router.replace("/(tabs)");
-    }
-  }, [isLoggedIn, user]);
+    const checkBiometricState = async () => {
+      const biometricEnabled = await storageService.getBiometricEnabled();
+      setBiometricEnabled(biometricEnabled);
+    };
 
-  useEffect(() => {
-    if (error) {
-      Alert.alert("Error", error);
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
+    checkBiometricState();
+  }, [isLoggedIn]);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -82,17 +89,28 @@ export default function LoginScreen() {
     }
 
     try {
+      console.log("Attempting login...");
       await dispatch(
         loginUser({ username: username.trim(), password })
       ).unwrap();
 
       // Clear returning user state when logging in with new credentials
       setReturningUser(null);
+
+      // After successful login, show biometric setup modal if supported and not already enabled
+      console.log("Login successful, checking biometric setup:", {
+        isBiometricSupported,
+        biometricEnabled,
+        shouldShowModal: isBiometricSupported && !biometricEnabled,
+      });
+
+      if (isBiometricSupported && !biometricEnabled) {
+        console.log("Showing biometric setup modal");
+        setShowBiometricModal(true);
+      }
     } catch (error) {
-      console.log(error);
+      console.log("Login error:", error);
       Alert.alert("Error", "Invalid username or password");
-      dispatch(logoutUser());
-      // Error is handled by the useEffect above
     }
   };
 
@@ -118,20 +136,36 @@ export default function LoginScreen() {
 
       // Clear returning user state when registering
       setReturningUser(null);
+
+      // After successful registration, show biometric setup modal if supported
+      if (isBiometricSupported) {
+        setShowBiometricModal(true);
+      }
     } catch (error) {
-      // Error is handled by the useEffect above
+      console.log(error);
+      Alert.alert("Error", "Registration failed. Please try again.");
     }
   };
 
   const handleBiometricLogin = async () => {
     try {
+      console.log("Attempting biometric login...");
       await dispatch(biometricLogin()).unwrap();
+      console.log("Biometric login successful");
 
       // Clear returning user state when logging in with biometric
       setReturningUser(null);
     } catch (error) {
-      // Error is handled by the useEffect above
+      console.log("Biometric login error:", error);
+      Alert.alert(
+        "Error",
+        "Biometric authentication failed. Please try again."
+      );
     }
+  };
+
+  const handleBiometricSuccess = () => {
+    setBiometricEnabled(true);
   };
 
   const toggleMode = () => {
@@ -236,24 +270,45 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {!isRegisterMode && isBiometricSupported && (
-          <>
-            <TouchableOpacity
-              style={[
-                styles.loginButton,
-                {
-                  backgroundColor: isLoading
-                    ? Colors.light.tabIconDefault
-                    : Colors.light.tint,
-                  opacity: isLoading ? 0.7 : 1,
-                },
-              ]}
-              onPress={handleBiometricLogin}
-              disabled={isLoading}
+        {/* Show biometric login option only for supported devices and users who haven't enabled it */}
+        {!isRegisterMode && isBiometricSupported && !biometricEnabled && (
+          <TouchableOpacity
+            style={[
+              styles.biometricButton,
+              {
+                backgroundColor: Colors.light.background,
+                borderColor: Colors.light.tint,
+                borderWidth: 1,
+              },
+            ]}
+            onPress={handleBiometricLogin}
+            disabled={isLoading}
+          >
+            <Text
+              style={[styles.biometricButtonText, { color: Colors.light.tint }]}
             >
-              <Text style={styles.loginButtonText}>Login with Biometric</Text>
-            </TouchableOpacity>
-          </>
+              Login with Biometric
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Show biometric login option for users who have enabled it */}
+        {!isRegisterMode && isBiometricSupported && biometricEnabled && (
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              {
+                backgroundColor: isLoading
+                  ? Colors.light.tabIconDefault
+                  : Colors.light.tint,
+                opacity: isLoading ? 0.7 : 1,
+              },
+            ]}
+            onPress={handleBiometricLogin}
+            disabled={isLoading}
+          >
+            <Text style={styles.loginButtonText}>Login with Biometric</Text>
+          </TouchableOpacity>
         )}
 
         <TouchableOpacity
@@ -268,6 +323,13 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <BiometricSetupModal
+        visible={showBiometricModal}
+        onClose={() => setShowBiometricModal(false)}
+        onSuccess={handleBiometricSuccess}
+        password={password}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -315,7 +377,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-
+  biometricButton: {
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  biometricButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
   switchModeButton: {
     marginTop: 20,
     paddingVertical: 10,

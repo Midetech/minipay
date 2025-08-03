@@ -32,13 +32,6 @@ export default function BankAccountsScreen() {
     }
   }, [user?.id, dispatch]);
 
-  // Redirect to login if no user found
-  useEffect(() => {
-    if (!user) {
-      // Auto-logout hook will handle redirect
-    }
-  }, [user, router]);
-
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",

@@ -30,6 +30,7 @@ export const loginUser = createAsyncThunk(
 
             // Save user data to local storage
             await storageService.saveUserData(user);
+            await storageService.savePassword(password); // Save password for biometric auth
             await storageService.setLastLogin(Date.now());
 
             return user;
@@ -70,10 +71,21 @@ export const biometricLogin = createAsyncThunk(
                 throw new Error('No biometric enrolled on this device');
             }
 
-            // Get stored user data
+            // Get stored user data and check if biometric is enabled
             const userData = await storageService.getUserData();
+            const biometricEnabled = await storageService.getBiometricEnabled();
+            const savedPassword = await storageService.getPassword();
+
             if (!userData) {
                 throw new Error('No saved user data found. Please login with username and password first.');
+            }
+
+            if (!biometricEnabled) {
+                throw new Error('Biometric authentication is not enabled for this account.');
+            }
+
+            if (!savedPassword) {
+                throw new Error('No saved password found. Please login with username and password first.');
             }
 
             // Authenticate with biometric
@@ -88,10 +100,13 @@ export const biometricLogin = createAsyncThunk(
                 throw new Error('Biometric authentication failed');
             }
 
+            // Now authenticate with the server using saved credentials
+            const user = await apiService.login(userData.username, savedPassword);
+
             // Update last login
             await storageService.setLastLogin(Date.now());
 
-            return userData;
+            return user;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Biometric authentication failed';
             return rejectWithValue(errorMessage);
@@ -115,20 +130,27 @@ export const logoutUser = createAsyncThunk(
 // Enable biometric authentication
 export const enableBiometric = createAsyncThunk(
     'user/enableBiometric',
-    async (_, { rejectWithValue }) => {
+    async (password: string, { rejectWithValue }) => {
         try {
+            console.log('enableBiometric: starting biometric setup');
+
             // Check if biometric is supported
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            console.log('enableBiometric: hasHardware:', hasHardware);
+
             if (!hasHardware) {
                 throw new Error('Biometric authentication is not supported on this device');
             }
 
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            console.log('enableBiometric: isEnrolled:', isEnrolled);
+
             if (!isEnrolled) {
                 throw new Error('No biometric enrolled on this device');
             }
 
             // Test biometric authentication
+            console.log('enableBiometric: requesting biometric authentication');
             const result = await LocalAuthentication.authenticateAsync({
                 promptMessage: 'Authenticate to enable biometric login',
                 cancelLabel: 'Cancel',
@@ -136,14 +158,21 @@ export const enableBiometric = createAsyncThunk(
                 disableDeviceFallback: false,
             });
 
+            console.log('enableBiometric: authentication result:', result);
+
             if (!result.success) {
                 throw new Error('Biometric authentication failed');
             }
 
-            // Save biometric setting
+            // Save biometric setting and password
+            console.log('enableBiometric: saving biometric settings');
             await storageService.setBiometricEnabled(true);
+            await storageService.savePassword(password);
+
+            console.log('enableBiometric: biometric setup completed successfully');
             return true;
         } catch (error) {
+            console.log('enableBiometric: error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to enable biometric';
             return rejectWithValue(errorMessage);
         }
@@ -156,6 +185,7 @@ export const disableBiometric = createAsyncThunk(
     async () => {
         try {
             await storageService.setBiometricEnabled(false);
+            await storageService.clearPassword();
         } catch (error) {
             console.error('Error disabling biometric:', error);
             throw error;
@@ -163,44 +193,14 @@ export const disableBiometric = createAsyncThunk(
     }
 );
 
-// Check for saved user session
-export const checkSavedSession = createAsyncThunk(
-    'user/checkSavedSession',
-    async (_, { dispatch }) => {
-        try {
-            const userData = await storageService.getUserData();
-            const biometricEnabled = await storageService.getBiometricEnabled();
-
-            if (userData && biometricEnabled) {
-                // Validate that the user still exists on the server
-                try {
-                    await apiService.getUserById(userData.id);
-                    return userData;
-                } catch (error) {
-                    // If user is not found on server, clear stored data automatically
-                    console.log('Stored user not found on server, clearing data');
-                    await storageService.clearUserData();
-                    return null;
-                }
-            }
-
-            return null;
-        } catch (error) {
-            console.error('Error checking saved session:', error);
-            // Clear data on any error to be safe
-            await storageService.clearUserData();
-            return null;
-        }
-    }
-);
-
-// Clear user data and logout (for handling user not found scenarios)
+// Clear user data and logout (for handling user not found scenarios and app state changes)
 export const clearUserDataAndLogout = createAsyncThunk(
     'user/clearUserDataAndLogout',
     async () => {
         try {
-            // Clear stored data
+            // Clear all stored data for security
             await storageService.clearUserData();
+            console.log('User data cleared for security');
         } catch (error) {
             console.error('Error clearing user data:', error);
         }

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { addAccount, getAccount } from './accountThunks';
-import { biometricLogin, checkSavedSession, clearUserDataAndLogout, disableBiometric, enableBiometric, loginUser, logoutUser, registerUser } from './authThunks';
+import { biometricLogin, clearUserDataAndLogout, disableBiometric, enableBiometric, loginUser, logoutUser, registerUser } from './authThunks';
 
 export interface BankAccount {
     id: string;
@@ -48,12 +48,21 @@ const userSlice = createSlice({
         setBiometricEnabled: (state, action: PayloadAction<boolean>) => {
             state.isBiometricEnabled = action.payload;
         },
+        updateBiometricState: (state, action: PayloadAction<boolean>) => {
+            state.isBiometricEnabled = action.payload;
+        },
         updateBankAccounts: (state, action: PayloadAction<BankAccount[]>) => {
             if (state.user) {
                 state.user.bankAccounts = action.payload;
             }
         },
         clearError: (state) => {
+            state.error = null;
+        },
+        // Force logout for security - used when app goes to background
+        forceLogout: (state) => {
+            state.user = null;
+            state.isLoggedIn = false;
             state.error = null;
         },
     },
@@ -84,6 +93,7 @@ const userSlice = createSlice({
                 state.isLoggedIn = true;
                 state.isLoading = false;
                 state.error = null;
+                // Note: biometricEnabled state will be updated by the component
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.isLoading = false;
@@ -111,7 +121,7 @@ const userSlice = createSlice({
                 state.isBiometricEnabled = false;
                 state.error = null;
             })
-            // Clear user data and logout (for user not found scenarios)
+            // Clear user data and logout (for user not found scenarios and app state changes)
             .addCase(clearUserDataAndLogout.fulfilled, (state) => {
                 state.user = null;
                 state.isLoggedIn = false;
@@ -125,13 +135,6 @@ const userSlice = createSlice({
             // Disable biometric
             .addCase(disableBiometric.fulfilled, (state) => {
                 state.isBiometricEnabled = false;
-            })
-            // Check saved session
-            .addCase(checkSavedSession.fulfilled, (state, action) => {
-                if (action.payload) {
-                    state.user = action.payload;
-                    state.isLoggedIn = true;
-                }
             })
             // Add account
             .addCase(addAccount.pending, (state) => {
@@ -187,7 +190,9 @@ const userSlice = createSlice({
 
 export const {
     setBiometricEnabled,
+    updateBiometricState,
     updateBankAccounts,
-    clearError
+    clearError,
+    forceLogout
 } = userSlice.actions;
 export default userSlice.reducer; 

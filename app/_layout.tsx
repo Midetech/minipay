@@ -1,38 +1,49 @@
-import { useAutoLogout } from "@/hooks/useAutoLogout";
-import { checkSavedSession } from "@/store/authThunks";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
 import { Provider } from "react-redux";
 
 import { store } from "@/store";
+import { useAppSelector } from "@/store/hooks";
 
 function RootLayoutNav() {
-  const dispatch = useAppDispatch();
-  const { isLoggedIn, isBiometricEnabled } = useAppSelector(
-    (state) => state.user
-  );
-
-  console.log("isBiometricEnabled", isBiometricEnabled);
-
-  // Auto-logout hook to handle user not found scenarios
-  useAutoLogout();
+  const router = useRouter();
+  const { isLoggedIn, user } = useAppSelector((state) => state.user);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Check for saved user session on app launch
-    dispatch(checkSavedSession());
-  }, [dispatch]);
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      if (!isLoggedIn) {
+        router.replace("/login");
+      } else {
+        router.replace("/(tabs)");
+      }
+    }
+  }, [isLoggedIn, isInitialized, router]);
+
+  console.log("isLoggedIn", isLoggedIn, user);
+
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return <View style={{ flex: 1, backgroundColor: "#fff" }} />;
+  }
 
   return (
     <>
       <StatusBar style="dark" />
       <Stack>
-        {!isLoggedIn ? (
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-        ) : (
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        )}
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </>
   );

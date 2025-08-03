@@ -242,34 +242,36 @@ export default function DashboardScreen() {
           )}
 
           {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                { backgroundColor: Colors.light.tint },
-              ]}
-            >
-              <Text style={styles.actionButtonText}>Send Money</Text>
-            </TouchableOpacity>
+          {user.bankAccounts.length > 0 && !isFetchingAccounts && (
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: Colors.light.tint },
+                ]}
+              >
+                <Text style={styles.actionButtonText}>Send Money</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                { backgroundColor: Colors.light.tint },
-              ]}
-            >
-              <Text style={styles.actionButtonText}>Request Money</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: Colors.light.tint },
+                ]}
+              >
+                <Text style={styles.actionButtonText}>Request Money</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                { backgroundColor: Colors.light.tint },
-              ]}
-            >
-              <Text style={styles.actionButtonText}>View Transactions</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: Colors.light.tint },
+                ]}
+              >
+                <Text style={styles.actionButtonText}>View Transactions</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </GestureHandlerRootView>

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -9,16 +9,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import BiometricSetupModal from "../../components/BiometricSetupModal";
 import { Colors } from "../../constants/Colors";
-import {
-  disableBiometric,
-  enableBiometric,
-  getUserById,
-  logoutUser,
-} from "../../store/authThunks";
+import { storageService } from "../../services/api";
+import { disableBiometric, logoutUser } from "../../store/authThunks";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 
 export default function ProfileScreen() {
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const dispatch = useAppDispatch();
   const { user, isBiometricEnabled } = useAppSelector((state) => state.user);
 
@@ -38,39 +38,64 @@ export default function ProfileScreen() {
       },
     ]);
   };
-  console.log("isBiometricEnabled", isBiometricEnabled);
+
   const handleEnableBiometric = async () => {
-    if (!user?.username) {
-      Alert.alert(
-        "Error",
-        "Please login first to enable biometric authentication"
-      );
-      return;
-    }
-
     try {
-      const { password } = await dispatch(getUserById(user.id)).unwrap();
-
-      if (password) {
-        const result = await dispatch(enableBiometric()).unwrap();
-        console.log(result);
-        Alert.alert(
-          "Success",
-          "Biometric authentication enabled successfully!"
-        );
+      const savedPassword = await storageService.getPassword();
+      if (savedPassword) {
+        setShowBiometricModal(true);
       } else {
         Alert.alert(
-          "Error",
-          "Please login first to enable biometric authentication"
+          "No Password Found",
+          "Please login with your password first to enable biometric authentication."
         );
       }
     } catch (error) {
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "Failed to enable biometric"
+        "Failed to check saved password. Please login again."
       );
     }
   };
+
+  const handleDisableBiometric = async () => {
+    Alert.alert(
+      "Disable Biometric Login",
+      "Are you sure you want to disable biometric authentication? You'll need to use your password for future logins.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Disable",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await dispatch(disableBiometric()).unwrap();
+              Alert.alert(
+                "Success",
+                "Biometric authentication has been disabled."
+              );
+            } catch (error) {
+              Alert.alert(
+                "Error",
+                "Failed to disable biometric authentication."
+              );
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBiometricSuccess = () => {
+    // The modal will handle the success state
+  };
+
   if (!user) {
     return null; // Auto-logout hook will handle redirect
   }
@@ -111,29 +136,25 @@ export default function ProfileScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Biometric Login</Text>
-              <View
+              <TouchableOpacity
+                onPress={
+                  isBiometricEnabled
+                    ? handleDisableBiometric
+                    : handleEnableBiometric
+                }
+                disabled={isLoading}
                 style={[
                   styles.statusBadge,
                   {
                     backgroundColor: isBiometricEnabled ? "#34C759" : "#FF3B30",
+                    opacity: isLoading ? 0.7 : 1,
                   },
                 ]}
               >
-                <TouchableOpacity
-                  onPress={() => {
-                    if (isBiometricEnabled) {
-                      dispatch(disableBiometric());
-                    } else {
-                      handleEnableBiometric();
-                    }
-                  }}
-                  // disabled={isLoading}
-                >
-                  <Text style={styles.statusText}>
-                    {isBiometricEnabled ? "Enabled" : "Disabled"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                <Text style={styles.statusText}>
+                  {isBiometricEnabled ? "Enabled" : "Disabled"}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.infoRow}>
@@ -155,6 +176,12 @@ export default function ProfileScreen() {
           <Text style={styles.footerText}>MiniPay v1.0.0</Text>
         </View>
       </ScrollView>
+
+      <BiometricSetupModal
+        visible={showBiometricModal}
+        onClose={() => setShowBiometricModal(false)}
+        onSuccess={handleBiometricSuccess}
+      />
     </SafeAreaView>
   );
 }
