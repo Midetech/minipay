@@ -171,6 +171,7 @@ export default function BankAccountsScreen() {
         onAddAccount={handleAddAccount}
         isLoading={isAddingAccount}
         userId={user.id}
+        resetForm={() => {}}
       />
     </SafeAreaView>
   );

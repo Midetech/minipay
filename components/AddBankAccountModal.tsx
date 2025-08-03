@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,7 @@ interface AddBankAccountModalProps {
   onAddAccount: (account: Omit<BankAccount, "id">) => void;
   isLoading?: boolean;
   userId: string;
+  resetForm?: () => void;
 }
 
 const accountTypes = [
@@ -39,6 +40,7 @@ export default function AddBankAccountModal({
   onAddAccount,
   userId,
   isLoading = false,
+  resetForm,
 }: AddBankAccountModalProps) {
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -74,13 +76,24 @@ export default function AddBankAccountModal({
     onAddAccount(newAccount);
   };
 
+  const resetFormFields = () => {
+    setBankName("");
+    setAccountNumber("");
+    setAccountType("checking");
+    setBalance("");
+    setCurrency("USD");
+  };
+
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!visible) {
+      resetFormFields();
+    }
+  }, [visible]);
+
   const handleClose = () => {
     if (!isLoading) {
-      setBankName("");
-      setAccountNumber("");
-      setAccountType("checking");
-      setBalance("");
-      setCurrency("USD");
+      resetFormFields();
       onClose();
     }
   };
