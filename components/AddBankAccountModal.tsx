@@ -44,9 +44,9 @@ export default function AddBankAccountModal({
 }: AddBankAccountModalProps) {
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
-  const [accountType, setAccountType] = useState<
-    "checking" | "savings" | "credit"
-  >("checking");
+  const [accountType, setAccountType] = useState<"savings" | "credit">(
+    "savings"
+  );
   const [balance, setBalance] = useState("");
   const [currency, setCurrency] = useState("USD");
 
@@ -79,7 +79,7 @@ export default function AddBankAccountModal({
   const resetFormFields = () => {
     setBankName("");
     setAccountNumber("");
-    setAccountType("checking");
+    setAccountType("savings");
     setBalance("");
     setCurrency("USD");
   };

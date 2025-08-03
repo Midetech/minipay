@@ -97,13 +97,6 @@ export default function LoginScreen() {
       // Clear returning user state when logging in with new credentials
       setReturningUser(null);
 
-      // After successful login, show biometric setup modal if supported and not already enabled
-      console.log("Login successful, checking biometric setup:", {
-        isBiometricSupported,
-        biometricEnabled,
-        shouldShowModal: isBiometricSupported && !biometricEnabled,
-      });
-
       if (isBiometricSupported && !biometricEnabled) {
         console.log("Showing biometric setup modal");
         setShowBiometricModal(true);

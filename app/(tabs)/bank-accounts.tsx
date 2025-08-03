@@ -41,8 +41,6 @@ export default function BankAccountsScreen() {
 
   const getAccountTypeColor = (type: string) => {
     switch (type) {
-      case "checking":
-        return "#007AFF";
       case "savings":
         return "#34C759";
       case "credit":

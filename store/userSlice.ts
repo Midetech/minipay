@@ -5,7 +5,7 @@ import { biometricLogin, clearUserDataAndLogout, disableBiometric, enableBiometr
 export interface BankAccount {
     id: string;
     accountNumber: string;
-    accountType: 'savings' | 'checking' | 'credit';
+    accountType: 'savings' | 'credit';
     balance: number;
     currency: string;
     bankName: string;
