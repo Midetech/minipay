@@ -89,8 +89,10 @@ A React Native mobile payment application with biometric authentication, bank ac
 
 Use these credentials to test the application:
 
-- **Username**: `john_doe` or `jane_smith`
-- **Password**: `password123`
+- **Username**: `midecodes`
+- **Password**: `password`
+
+Account can also be created on the app
 
 ## Getting Started
 
