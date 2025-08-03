@@ -148,6 +148,13 @@ export default function LoginScreen() {
     setPassword("");
   };
 
+  console.log("returningUser", {
+    isRegisterMode,
+    isBiometricSupported,
+    biometricEnabled,
+    returningUser,
+  });
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: Colors.light.background }]}
@@ -242,30 +249,8 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Show biometric login option only for supported devices and users who haven't enabled it */}
-        {!isRegisterMode && isBiometricSupported && !biometricEnabled && (
-          <TouchableOpacity
-            style={[
-              styles.biometricButton,
-              {
-                backgroundColor: Colors.light.background,
-                borderColor: Colors.light.tint,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={handleBiometricLogin}
-            disabled={isLoading}
-          >
-            <Text
-              style={[styles.biometricButtonText, { color: Colors.light.tint }]}
-            >
-              Login with Biometric
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {/* Show biometric login option for users who have enabled it */}
-        {!isRegisterMode && isBiometricSupported && biometricEnabled && (
+        {isBiometricSupported && biometricEnabled && returningUser && (
           <TouchableOpacity
             style={[
               styles.loginButton,
